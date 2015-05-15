@@ -16,6 +16,7 @@ November 2011, we observe that XXXX  XXXXX.
 The following R libraries are used.
 ```{r}
 library(stringr)
+library(dplyr)
 library(ggplot2)
 ```
 
@@ -155,11 +156,26 @@ unique(normalizedEVTYPE)
 ## Results
 
 ### Injuries and Fatalities
+Create a `storms.human` dataset that plots the number of (non-zero) injured or
+fatalities versus the event type.
 ```{r}
-storms.human <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
-dim(storms.human)
-head(storms.human)
-#plot(x=storms.human$normalizedEVTYPE, y=storms.human$INJURIES)
+df <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
+storms.human <- df %>% group_by(normalizedEVTYPE) %>%
+    summarise(souls=sum(INJURIES, FATALITIES))
+```
+Plot
+```{r}
+index <- which.max(storms.human$souls)
+evtype <- storms.human$normalizedEVTYPE[index]
+cnt <- storms.human$souls[index]
+ggplot(storms.human, aes(x=normalizedEVTYPE, y=souls)) +
+  ggtitle("Injuries and Fatalities per Event Type") +
+  xlab("Event Type") +
+  ylab("Count") +
+  geom_point() +
+  geom_text(hjust=1, yjust=0,
+            aes(label=paste0(evtype, ", ", cnt),
+                x=evtype, y=cnt))
 ```
 
 ### Property and Crop Damage

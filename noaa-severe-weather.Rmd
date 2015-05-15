@@ -87,28 +87,60 @@ to `r nrow(storms.df)`.
 
 #### Tidying Event Types
 The previous subsetting and filter results in `r length(unique(storms.df$EVTYPE))`
-unique `EVTYPE` values in the reduced `storms.df` dataset versus the original
-`r length(unique(storms.orig$EVTYPE))` values.
+unique `EVTYPE` values we need to consider in the reduced `storms.df` dataset
+versus the original `r length(unique(storms.orig$EVTYPE))` values in `storms.orig`.
 ```{r}
 unique(storms.df$EVTYPE)
 ```
 
-The event types can be somewhat normalized and still retain the level of fidelity
-needed for this report.  The code below shows the series of transformations used.
+Still, there are many event types.  Through visual inspection, we'll now attempt
+to somewhat normalize them while retaining a reasonable level of fidelity.
+The code below shows the series of transformations used.
 ```{r}
 normalizedEVTYPE <- storms.df$EVTYPE
 
 # Upper case all
 normalizedEVTYPE <- toupper(normalizedEVTYPE)
 
-# Replace special characters /, (, ), . with space
-normalizedEVTYPE <- gsub("/|\\(|\\)|\\.", " ", normalizedEVTYPE)
+# Replace special characters /, (, ), ., \, &, - with space
+normalizedEVTYPE <- gsub("/|\\(|\\)|\\.|\\\\|\\&|\\-", " ", normalizedEVTYPE)
+
+# Remove numeric F, G, or numeric magnitudes
+normalizedEVTYPE <- gsub("[F|G]\\d+", " ", normalizedEVTYPE)
+normalizedEVTYPE <- gsub("\\d+", " ", normalizedEVTYPE)
+
+# Remove plurality
+normalizedEVTYPE <- gsub("RAINS\\s", "RAIN ", normalizedEVTYPE)
+normalizedEVTYPE <- gsub("STORMS", "STORM", normalizedEVTYPE)
+normalizedEVTYPE <- gsub("WINDS", "WIND", normalizedEVTYPE)
+normalizedEVTYPE <- gsub("FLOODS", "FLOOD", normalizedEVTYPE)
+
+# Remove adjectives
+normalizedEVTYPE <- gsub("HARD |HIGH |SEVERE |HEAVY |EXCESSIVE |STRONG | INJURY", " ", normalizedEVTYPE)
+
+# Any tornado
+normalizedEVTYPE <- gsub("TORNADOES|TORNDAO", "TORNADO", normalizedEVTYPE)
+normalizedEVTYPE <- gsub(".*TORNADO.*", "TORNADO", normalizedEVTYPE)
+
+# Any hurricane
+normalizedEVTYPE <- gsub(".*HURRICANE.*", "HURRICANE", normalizedEVTYPE)
+
+# Any thunderstorm
+normalizedEVTYPE <- gsub("TSTM|THUNERSTORM|TUNDERSTORM|THUDERSTORM|THUNDERTORM|THUNDEERSTORM", "THUNDERSTORM", normalizedEVTYPE)
+normalizedEVTYPE <- gsub(".*THUNDERSTORM.*", "THUNDERSTORM", normalizedEVTYPE)
+
+# Snow
+normalizedEVTYPE <- gsub("SNOWFALL", "SNOW", normalizedEVTYPE)
 
 # Trim adjacent whitespace
 normalizedEVTYPE <- gsub("\\s+", " ", normalizedEVTYPE)
 
 # Trim leading and trailing blanks
 normalizedEVTYPE <- str_trim(normalizedEVTYPE)
+
+storms.df$normalizedEVTYPE <- normalizedEVTYPE
+unique(normalizedEVTYPE)
+length(unique(normalizedEVTYPE))
 ```
 
 The number of unique types has been reduced from the
@@ -126,6 +158,8 @@ unique(normalizedEVTYPE)
 ```{r}
 storms.human <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
 dim(storms.human)
+head(storms.human)
+#plot(x=storms.human$normalizedEVTYPE, y=storms.human$INJURIES)
 ```
 
 ### Property and Crop Damage

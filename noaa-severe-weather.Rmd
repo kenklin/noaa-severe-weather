@@ -1,5 +1,5 @@
 ---
-title: "US Weather Effects on Population Health and the Economy"
+title: "US Weather Effects on Population Health and the Economic Consequences"
 output: html_document
 ---
 
@@ -16,7 +16,7 @@ We first read in the data from the csv file in [Storm Data](https://d396qusza40o
 orig.storms <- read.csv("data/repdata-data-StormData.csv", stringsAsFactors=FALSE)
 ```
 
-After reading in the data we see that there are 902297 observations and 37 variables in this dataset.
+After reading in the data we see that there are 902297 observations (rows) and 37 variables (columns) in this dataset.
 ```{r}
 dim(orig.storms)
 ```
@@ -30,15 +30,22 @@ We survey the first few rows in this dataset.  These documents help us find how 
 head(orig.storms)
 ```
 
-To improve R code performance, we can reduce the dataset to only those variables we need.
+Reducing the dataset from 37 variables to only those variables we are focusing on helps improve subsequent computational performance.  Besides EVTYPE, the following variables are needed.
+
+  - Population health: FATALITIES, INJURIES
+  - Economic consequences: PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP
+  
 ```{r}
-storms <- orig.storms[,c("EVTYPE", "FATALITIES")]
+storms <- orig.storms[,c("EVTYPE",
+                         "FATALITIES", "INJURIES",
+                         "PROPDMG", "PROPDMGEXP",
+                         "CROPDMG", "CROPDMGEXP")]
 dim(storms)
 ```
 
 There are 985 different event types `EVTYPE`.
 ```{r}
-unique(orig.storms$EVTYPE)
+unique(storms$EVTYPE)
 ```
 
 --------------------------------------------------------------------------------

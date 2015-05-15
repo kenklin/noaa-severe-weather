@@ -1,17 +1,32 @@
 ---
-title: "Title: noaa-severe-weather"
+title: "US Weather Effects on Population Health and the Economy"
 output: html_document
 ---
 
 ## Synopsis
-In this reports we aim to ...
+In this report we aim to describe which type of US weather events are most harmful with respect to population health and which have the greatest economic consequences.
+
+---
 
 ## Data Processing
 
 ### Reading in the data
+We first read in the data from the csv file in [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) 47mb bz2 file specified in the assignment. 
 ```{r}
-summary(cars)
+storms <- read.csv("data/repdata-data-StormData.csv", stringsAsFactors=FALSE)
 ```
+After reading in the data we check the first few rows (902297) in this dataset.
+```{r}
+dim(storms)
+```
+```{r}
+head(storms)
+```
+There are 985 different event types `EVTYPE`.
+```{r}
+unique(storms$EVTYPE)
+```
+---
 
 ## Results
 

@@ -4,54 +4,132 @@ output: html_document
 ---
 
 ## Synopsis
-In this report we aim to describe which type of US weather events are most harmful with respect to population health and which have the greatest economic consequences.
+In this report we aim to describe which type of US weather events are most
+harmful with respect to population health (injuries and fatalities) and which
+have the greatest economic consequences (property and crop damage).
+Exploring the NOAA Storm Database, containing data from 1950 through
+November 2011, we observe that XXXX  XXXXX.
 
 --------------------------------------------------------------------------------
 
 ## Data Processing
+The following R libraries are used.
+```{r}
+library(stringr)
+library(ggplot2)
+```
 
 ### Reading in the data
-We first read in the data from the csv file in [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) 47mb bz2 file, as specified in the assignment. 
-```{r}
-orig.storms <- read.csv("data/repdata-data-StormData.csv", stringsAsFactors=FALSE)
+We first read in the data from the csv file in
+[Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
+47mb bzip2 file.
+The data is a bzip2 compressed, comma separated file containing a header and
+missing values are coded as blank fields.
+```{r noaa-severe-weather-read, cache=TRUE}
+storms.orig <- read.csv("data/repdata-data-StormData.csv.bz2", header=TRUE,
+                        na.strings="", stringsAsFactors=FALSE)
 ```
 
-After reading in the data we see that there are 902297 observations (rows) and 37 variables (columns) in this dataset.
+After reading the data into `storms.orig` we see that there are
+`r nrow(storms.orig)` observations (rows) and 
+`r ncol(storms.orig)` variables (columns) in this dataset.
 ```{r}
-dim(orig.storms)
+dim(storms.orig)
 ```
 
-We survey the first few rows in this dataset.  These documents help us find how some of the variables are constructed/defined.
+#### Exploring the data
+We explore the first few rows in this dataset.  These documents help us find how some of the variables are constructed/defined.
 
   - National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
   - National Climatic Data Center Storm Events [FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
 
 ```{r}
-head(orig.storms)
+head(storms.orig)
 ```
 
-Reducing the dataset from 37 variables to only those variables we are focusing on helps improve subsequent computational performance.  Besides EVTYPE, the following variables are needed.
+The `EVTYPE` event type variable will be needed to determine the weather event.  Besides EVTYPE, the following variables contain data useful for this report.
 
-  - Population health: FATALITIES, INJURIES
-  - Economic consequences: PROPDMG, PROPDMGEXP, CROPDMG, CROPDMGEXP
-  
+  - To determine population health, the following variables are needed:
+    - `FATALITIES` - The number of direct or indirect fatalities attributable to the event.
+    - `INJURIES` - The number of direct or indirect injuries attributable to the event.
+  - Economic consequences:
+    - `PROPDMG` - Property damage dollar amount
+    - `PROPDMGEXP` - Property damage dollar amount magnitude (K, M, B, etc.)
+    - `CROPDMG` - Crop damage dollar amount
+    - `CROPDMGEXP` - Crop damage dollar amount magnitude (K, M, B, etc.)
+
+#### Subsetting the dataset
+Reducing the dataset to only those variables we are focusing on both helps
+pre-eliminate non-essential values that we would have to otherwise visually
+inspect later in the analysis and also improves subsequent computational performance.
+
+`storms.df` will contain the reduced, cleaned, and tidied dataset used
+throughout the remainder of the report.
 ```{r}
-storms <- orig.storms[,c("EVTYPE",
-                         "FATALITIES", "INJURIES",
-                         "PROPDMG", "PROPDMGEXP",
-                         "CROPDMG", "CROPDMGEXP")]
-dim(storms)
+storms.df <- storms.orig[,c("EVTYPE",
+                            "FATALITIES", "INJURIES",
+                            "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
+dim(storms.df)
+```
+The number of variables used decreases from `r ncol(storms.orig)`
+to `r ncol(storms.df)`.
+
+#### Filtering the dataset
+Reducing the dataset to only those observations where there are injures/fatalities
+or property/crop damage also helps.
+```{r}
+storms.df <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0 |
+                       storms.df$PROPDMG>0 | storms.df$CROPDMG>0, ]
+dim(storms.df)
+```
+The number of observations used decreases from `r nrow(storms.orig)`
+to `r nrow(storms.df)`.
+
+#### Tidying Event Types
+The previous subsetting and filter results in `r length(unique(storms.df$EVTYPE))`
+unique `EVTYPE` values in the reduced `storms.df` dataset versus the original
+`r length(unique(storms.orig$EVTYPE))` values.
+```{r}
+unique(storms.df$EVTYPE)
 ```
 
-There are 985 different event types `EVTYPE`.
+The event types can be somewhat normalized and still retain the level of fidelity
+needed for this report.  The code below shows the series of transformations used.
 ```{r}
-unique(storms$EVTYPE)
+normalizedEVTYPE <- storms.df$EVTYPE
+
+# Upper case all
+normalizedEVTYPE <- toupper(normalizedEVTYPE)
+
+# Replace special characters /, (, ), . with space
+normalizedEVTYPE <- gsub("/|\\(|\\)|\\.", " ", normalizedEVTYPE)
+
+# Trim adjacent whitespace
+normalizedEVTYPE <- gsub("\\s+", " ", normalizedEVTYPE)
+
+# Trim leading and trailing blanks
+normalizedEVTYPE <- str_trim(normalizedEVTYPE)
+```
+
+The number of unique types has been reduced from the
+original `r length(unique(storms.orig$EVTYPE))`
+to `r length(unique(normalizedEVTYPE))`.
+```{r}
+unique(normalizedEVTYPE)
 ```
 
 --------------------------------------------------------------------------------
 
 ## Results
 
+### Injuries and Fatalities
 ```{r}
-plot(cars)
+storms.human <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
+dim(storms.human)
+```
+
+### Property and Crop Damage
+```{r}
+storms.damage <- storms.df[storms.df$PROPDMG>0 | storms.df$CROPDMG>0, ]
+dim(storms.damage)
 ```

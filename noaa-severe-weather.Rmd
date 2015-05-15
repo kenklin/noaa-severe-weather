@@ -151,6 +151,9 @@ to `r length(unique(normalizedEVTYPE))`.
 unique(normalizedEVTYPE)
 ```
 
+#### Miscellaneous Tidying
+
+
 --------------------------------------------------------------------------------
 
 ## Results
@@ -158,14 +161,16 @@ unique(normalizedEVTYPE)
 ### Injuries and Fatalities
 Copy and filter the reduced `storms.df` dataset to only those observations where
 there is an injury or fatality and store it in `human.df`.
-Summarize the injuries and fatalities by event type and store it in `human.summary`.
 ```{r}
 human.df <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
+```
+
+Summarize the injuries and fatalities by event type and store it in `human.summary`.
+```{r}
 human.summary <- human.df %>% group_by(normalizedEVTYPE) %>%
     summarise(souls=sum(INJURIES, FATALITIES))
-human.total <- sum(human.summary$souls)
 ```
-There are a total of *`r as.character(human.total)`* injuries and fatalities.
+There are a total of *`r as.character(sum(human.summary$souls))`* injuries and fatalities.
 
 Plot `human.summary` and notice the event with the worst impact.
 ```{r}
@@ -185,8 +190,72 @@ ggplot(human.summary, aes(x=normalizedEVTYPE, y=souls)) +
                 x=human.summary$normalizedEVTYPE[index-2], y=cnt))
 ```
 
+This table shows the observations with the highest counts.
+```{r}
+arrange(human.summary, desc(souls))
+```
+
 ### Property and Crop Damage
+Copy and filter the reduced `storms.df` dataset to only those observations where
+there is property or crop damage and store it in `damage.df`.
 ```{r}
 damage.df <- storms.df[storms.df$PROPDMG>0 | storms.df$CROPDMG>0, ]
 dim(damage.df)
+head(damage.df)
+```
+
+Before we can create a table that summarizes the damage costs, we need to compute
+normalized costs from `damage.df$PROPDMG`/`damage.df$PROPDMGEXP` and
+`damage.df$CROPDMG`/`damage.df$CROPDMGEXP`.
+Some of the EXP units are in lower case, so upper case them all.
+```{r}
+damage.df$PROPDMGEXP <- toupper(damage.df$PROPDMGEXP)
+damage.df$CROPDMGEXP <- toupper(damage.df$CROPDMGEXP)
+#unique(damage.df$PROPDMGEXP)
+#unique(damage.df$CROPDMGEXP)
+damage.df <- mutate(damage.df, cost=0)
+#for (i in 1:nrow(damage.df)) {
+for (i in 1:10000) {
+  dmg <- damage.df[i, "PROPDMG"]
+  if (dmg > 0) {
+    exp <- damage.df[i, "PROPDMGEXP"]
+    if (exp == "K") {
+      cost <- dmg * 1000;
+    } else if (exp == "M") {
+      cost <- dmg * 100000;
+    }
+    damage.df[i, "cost"] <- damage.df[i, "cost"] + cost
+  }
+}
+```
+
+Summarize the property and crop damage by event type and store it in `damage.summary`.
+```{r}
+damage.summary <- damage.df %>% group_by(normalizedEVTYPE) %>%
+    summarise(cost=sum(cost))
+```
+There are a total of *`r as.character(sum(damage.summary$cost))`* USD property and
+crop damage costs.
+
+Plot `damage.summary` and notice the event with the worst impact.
+```{r}
+# Find event with worst impact
+index <- which.max(damage.summary$cost)
+evtype <- damage.summary$normalizedEVTYPE[index]
+cnt <- damage.summary$cost[index]
+
+# Plot
+ggplot(damage.summary, aes(x=normalizedEVTYPE, y=cost)) +
+  ggtitle("Property and Crop Damage per Event Type") +
+  xlab("Event Type") + ylab("Cost") +
+  theme_bw() +
+  geom_point() +
+  geom_text(hjust=1, yjust=0,
+            aes(label=paste0(evtype, ", ", cnt),
+                x=damage.summary$normalizedEVTYPE[index-2], y=cnt))
+```
+
+This table shows the observations with the highest counts.
+```{r}
+arrange(damage.summary, desc(cost))
 ```

@@ -156,30 +156,37 @@ unique(normalizedEVTYPE)
 ## Results
 
 ### Injuries and Fatalities
-Create a `storms.human` dataset that plots the number of (non-zero) injured or
-fatalities versus the event type.
+Copy and filter the reduced `storms.df` dataset to only those observations where
+there is an injury or fatality and store it in `human.df`.
+Summarize the injuries and fatalities by event type and store it in `human.summary`.
 ```{r}
-df <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
-storms.human <- df %>% group_by(normalizedEVTYPE) %>%
+human.df <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
+human.summary <- human.df %>% group_by(normalizedEVTYPE) %>%
     summarise(souls=sum(INJURIES, FATALITIES))
+human.total <- sum(human.summary$souls)
 ```
-Plot
+There are a total of *`r as.character(human.total)`* injuries and fatalities.
+
+Plot `human.summary` and notice the event with the worst impact.
 ```{r}
-index <- which.max(storms.human$souls)
-evtype <- storms.human$normalizedEVTYPE[index]
-cnt <- storms.human$souls[index]
-ggplot(storms.human, aes(x=normalizedEVTYPE, y=souls)) +
+# Find event with worst impact
+index <- which.max(human.summary$souls)
+evtype <- human.summary$normalizedEVTYPE[index]
+cnt <- human.summary$souls[index]
+
+# Plot
+ggplot(human.summary, aes(x=normalizedEVTYPE, y=souls)) +
   ggtitle("Injuries and Fatalities per Event Type") +
-  xlab("Event Type") +
-  ylab("Count") +
+  xlab("Event Type") + ylab("Count") +
+  theme_bw() +
   geom_point() +
   geom_text(hjust=1, yjust=0,
             aes(label=paste0(evtype, ", ", cnt),
-                x=evtype, y=cnt))
+                x=human.summary$normalizedEVTYPE[index-2], y=cnt))
 ```
 
 ### Property and Crop Damage
 ```{r}
-storms.damage <- storms.df[storms.df$PROPDMG>0 | storms.df$CROPDMG>0, ]
-dim(storms.damage)
+damage.df <- storms.df[storms.df$PROPDMG>0 | storms.df$CROPDMG>0, ]
+dim(damage.df)
 ```

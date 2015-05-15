@@ -64,12 +64,17 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 <h2>Data Processing</h2>
 <div id="reading-in-the-data" class="section level3">
 <h3>Reading in the data</h3>
-<p>We first read in the data from the csv file in <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2">Storm Data</a> 47mb bz2 file specified in the assignment.</p>
-<pre class="r"><code>storms &lt;- read.csv(&quot;data/repdata-data-StormData.csv&quot;, stringsAsFactors=FALSE)</code></pre>
-<p>After reading in the data we check the first few rows (902297) in this dataset.</p>
-<pre class="r"><code>dim(storms)</code></pre>
+<p>We first read in the data from the csv file in <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2">Storm Data</a> 47mb bz2 file, as specified in the assignment.</p>
+<pre class="r"><code>orig.storms &lt;- read.csv(&quot;data/repdata-data-StormData.csv&quot;, stringsAsFactors=FALSE)</code></pre>
+<p>After reading in the data we see that there are 902297 observations and 37 variables in this dataset.</p>
+<pre class="r"><code>dim(orig.storms)</code></pre>
 <pre><code>## [1] 902297     37</code></pre>
-<pre class="r"><code>head(storms)</code></pre>
+<p>We survey the first few rows in this dataset. These documents help us find how some of the variables are constructed/defined.</p>
+<ul>
+<li>National Weather Service <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf">Storm Data Documentation</a></li>
+<li>National Climatic Data Center Storm Events <a href="https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf">FAQ</a></li>
+</ul>
+<pre class="r"><code>head(orig.storms)</code></pre>
 <pre><code>##   STATE__           BGN_DATE BGN_TIME TIME_ZONE COUNTY COUNTYNAME STATE
 ## 1       1  4/18/1950 0:00:00     0130       CST     97     MOBILE    AL
 ## 2       1  4/18/1950 0:00:00     0145       CST      3    BALDWIN    AL
@@ -105,8 +110,12 @@ if (window.hljs && document.readyState && document.readyState === "complete") {
 ## 4     3458      8626          0          0              4
 ## 5     3412      8642          0          0              5
 ## 6     3450      8748          0          0              6</code></pre>
+<p>To improve R code performance, we can reduce the dataset to only those variables we need.</p>
+<pre class="r"><code>storms &lt;- orig.storms[,c(&quot;EVTYPE&quot;, &quot;FATALITIES&quot;)]
+dim(storms)</code></pre>
+<pre><code>## [1] 902297      2</code></pre>
 <p>There are 985 different event types <code>EVTYPE</code>.</p>
-<pre class="r"><code>unique(storms$EVTYPE)</code></pre>
+<pre class="r"><code>unique(orig.storms$EVTYPE)</code></pre>
 <pre><code>##   [1] &quot;TORNADO&quot;                        &quot;TSTM WIND&quot;                     
 ##   [3] &quot;HAIL&quot;                           &quot;FREEZING RAIN&quot;                 
 ##   [5] &quot;SNOW&quot;                           &quot;ICE STORM/FLASH FLOOD&quot;         

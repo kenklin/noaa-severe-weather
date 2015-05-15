@@ -6,27 +6,42 @@ output: html_document
 ## Synopsis
 In this report we aim to describe which type of US weather events are most harmful with respect to population health and which have the greatest economic consequences.
 
----
+--------------------------------------------------------------------------------
 
 ## Data Processing
 
 ### Reading in the data
-We first read in the data from the csv file in [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) 47mb bz2 file specified in the assignment. 
+We first read in the data from the csv file in [Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2) 47mb bz2 file, as specified in the assignment. 
 ```{r}
-storms <- read.csv("data/repdata-data-StormData.csv", stringsAsFactors=FALSE)
+orig.storms <- read.csv("data/repdata-data-StormData.csv", stringsAsFactors=FALSE)
 ```
-After reading in the data we check the first few rows (902297) in this dataset.
+
+After reading in the data we see that there are 902297 observations and 37 variables in this dataset.
 ```{r}
+dim(orig.storms)
+```
+
+We survey the first few rows in this dataset.  These documents help us find how some of the variables are constructed/defined.
+
+  - National Weather Service [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf)
+  - National Climatic Data Center Storm Events [FAQ](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2FNCDC%20Storm%20Events-FAQ%20Page.pdf)
+
+```{r}
+head(orig.storms)
+```
+
+To improve R code performance, we can reduce the dataset to only those variables we need.
+```{r}
+storms <- orig.storms[,c("EVTYPE", "FATALITIES")]
 dim(storms)
 ```
-```{r}
-head(storms)
-```
+
 There are 985 different event types `EVTYPE`.
 ```{r}
-unique(storms$EVTYPE)
+unique(orig.storms$EVTYPE)
 ```
----
+
+--------------------------------------------------------------------------------
 
 ## Results
 

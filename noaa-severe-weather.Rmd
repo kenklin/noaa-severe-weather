@@ -169,31 +169,37 @@ Summarize the injuries and fatalities by event type and store it in `human.summa
 ```{r}
 human.summary <- human.df %>% group_by(normalizedEVTYPE) %>%
     summarise(souls=sum(INJURIES, FATALITIES))
+dim(human.summary)
 ```
+
 There are a total of *`r as.character(sum(human.summary$souls))`* injuries and fatalities.
+There are *`r nrow(human.summary)`* different normalized event types;
+Since this report focuses on the events with the worst impacts,
+I've decided to only look at the top 20 for this report.
+```{r}
+top_n <- 20
+human.top_summary <- top_n(human.summary, top_n, souls)
+arrange(human.top_summary, desc(souls))
+```
 
 Plot `human.summary` and notice the event with the worst impact.
 ```{r}
 # Find event with worst impact
-index <- which.max(human.summary$souls)
-evtype <- human.summary$normalizedEVTYPE[index]
-cnt <- human.summary$souls[index]
+index <- which.max(human.top_summary$souls)
+evtype <- human.top_summary$normalizedEVTYPE[index]
+cnt <- human.top_summary$souls[index]
 
 # Plot
-ggplot(human.summary, aes(x=normalizedEVTYPE, y=souls)) +
-  ggtitle("Injuries and Fatalities per Event Type") +
+ggplot(human.top_summary, aes(x=normalizedEVTYPE, y=souls)) +
+  ggtitle(paste("Top", top_n, "Injuries and Fatalities per Event Type")) +
   xlab("Event Type") + ylab("Count") +
   theme_bw() +
   geom_point() +
   geom_text(hjust=1, yjust=0,
             aes(label=paste0(evtype, ", ", cnt),
-                x=human.summary$normalizedEVTYPE[index-2], y=cnt))
+                x=human.top_summary$normalizedEVTYPE[index], y=cnt))
 ```
 
-This table shows the observations with the highest counts.
-```{r}
-arrange(human.summary, desc(souls))
-```
 
 ### Property and Crop Damage
 Copy and filter the reduced `storms.df` dataset to only those observations where

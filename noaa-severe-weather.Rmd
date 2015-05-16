@@ -174,15 +174,14 @@ dim(human.summary)
 
 There are a total of *`r as.character(sum(human.summary$souls))`* injuries and fatalities.
 There are *`r nrow(human.summary)`* different normalized event types;
-Since this report focuses on the events with the worst impacts,
-I've decided to only look at the top 20 for this report.
+Since this report focuses on the events with the worst impacts, and not all,
+I've decided to only look at the *top `r top_n <- 20` `r top_n`* for this report.
 ```{r}
-top_n <- 20
 human.top_summary <- top_n(human.summary, top_n, souls)
 arrange(human.top_summary, desc(souls))
 ```
 
-Plot `human.summary` and notice the event with the worst impact.
+Plot `human.top_summary` and notice the event with the worst impact.
 ```{r}
 # Find event with worst impact
 index <- which.max(human.top_summary$souls)
@@ -197,7 +196,7 @@ ggplot(human.top_summary, aes(x=normalizedEVTYPE, y=souls)) +
   geom_point() +
   geom_text(hjust=1, yjust=0,
             aes(label=paste0(evtype, ", ", cnt),
-                x=human.top_summary$normalizedEVTYPE[index], y=cnt))
+                x=human.top_summary$normalizedEVTYPE[index-1], y=cnt))
 ```
 
 
@@ -220,17 +219,17 @@ damage.df$CROPDMGEXP <- toupper(damage.df$CROPDMGEXP)
 #unique(damage.df$PROPDMGEXP)
 #unique(damage.df$CROPDMGEXP)
 damage.df <- mutate(damage.df, cost=0)
-#for (i in 1:nrow(damage.df)) {
-for (i in 1:10000) {
+for (i in 1:nrow(damage.df)) {
+#for (i in 1:10000) {
   dmg <- damage.df[i, "PROPDMG"]
   if (dmg > 0) {
     exp <- damage.df[i, "PROPDMGEXP"]
-    if (exp == "K") {
-      cost <- dmg * 1000;
-    } else if (exp == "M") {
-      cost <- dmg * 100000;
+    if (!is.na(exp)) {
+      if (exp == "K") {       cost <- dmg * 1000;
+      } else if (exp == "M") {cost <- dmg * 100000;
+      }
+      damage.df[i, "cost"] <- damage.df[i, "cost"] + cost
     }
-    damage.df[i, "cost"] <- damage.df[i, "cost"] + cost
   }
 }
 ```
@@ -242,26 +241,28 @@ damage.summary <- damage.df %>% group_by(normalizedEVTYPE) %>%
 ```
 There are a total of *`r as.character(sum(damage.summary$cost))`* USD property and
 crop damage costs.
+There are *`r nrow(damage.summary)`* different normalized event types;
+Since this report focuses on the events with the worst impacts, and not all,
+I've decided to only look at the *top `r top_n <- 20` `r top_n`* for this report.
+```{r}
+damage.top_summary <- top_n(damage.summary, top_n, cost)
+arrange(damage.top_summary, desc(cost))
+```
 
-Plot `damage.summary` and notice the event with the worst impact.
+Plot `damage.top_summary` and notice the event with the worst impact.
 ```{r}
 # Find event with worst impact
-index <- which.max(damage.summary$cost)
-evtype <- damage.summary$normalizedEVTYPE[index]
-cnt <- damage.summary$cost[index]
+index <- which.max(damage.top_summary$cost)
+evtype <- damage.top_summary$normalizedEVTYPE[index]
+cnt <- damage.top_summary$cost[index]
 
 # Plot
-ggplot(damage.summary, aes(x=normalizedEVTYPE, y=cost)) +
-  ggtitle("Property and Crop Damage per Event Type") +
+ggplot(damage.top_summary, aes(x=normalizedEVTYPE, y=cost)) +
+  ggtitle(paste("Top", top_n, "Property and Crop Damage per Event Type")) +
   xlab("Event Type") + ylab("Cost") +
   theme_bw() +
   geom_point() +
   geom_text(hjust=1, yjust=0,
             aes(label=paste0(evtype, ", ", cnt),
-                x=damage.summary$normalizedEVTYPE[index-2], y=cnt))
-```
-
-This table shows the observations with the highest counts.
-```{r}
-arrange(damage.summary, desc(cost))
+                x=damage.top_summary$normalizedEVTYPE[index-1], y=cnt))
 ```

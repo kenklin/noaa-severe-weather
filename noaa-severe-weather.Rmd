@@ -7,14 +7,18 @@ output: html_document
 In this report we aim to describe which type of US weather events are most
 harmful with respect to population health (injuries and fatalities) and which
 have the greatest economic consequences (property and crop damage).
-Exploring the NOAA Storm Database, containing data from 1950 through
-November 2011, this report shows that *tornadoes* have the worst on both.
+Exploring the NOAA Storm Database, this report shows that *tornadoes* have
+the worst effect on popluation health while hurricanes have the greatest
+economic consequences.
+Although the NOAA Storm Database contains records from 1950 - 2013, only records
+from 1995 onwards are used as the earlier years have fewer events recorded.
 
 --------------------------------------------------------------------------------
 
 ## Data Processing
 The following R libraries are used.
 ```{r}
+library(assertthat)
 library(stringr)
 library(dplyr)
 library(ggplot2)
@@ -59,7 +63,7 @@ The `EVTYPE` event type variable will be needed to determine the weather event. 
     - `CROPDMG` - Crop damage dollar amount
     - `CROPDMGEXP` - Crop damage dollar amount magnitude (K, M, B, etc.)
 
-#### Subsetting the dataset
+#### Subsetting by dataset variables
 Reducing the dataset to only those variables we are focusing on both helps
 pre-eliminate non-essential values that we would have to otherwise visually
 inspect later in the analysis and also improves subsequent computational performance.
@@ -67,7 +71,7 @@ inspect later in the analysis and also improves subsequent computational perform
 `storms.df` will contain the reduced, cleaned, and tidied dataset used
 throughout the remainder of the report.
 ```{r}
-storms.df <- storms.orig[,c("EVTYPE",
+storms.df <- storms.orig[,c("EVTYPE", "BGN_DATE",
                             "FATALITIES", "INJURIES",
                             "PROPDMG", "PROPDMGEXP", "CROPDMG", "CROPDMGEXP")]
 dim(storms.df)
@@ -75,14 +79,33 @@ dim(storms.df)
 The number of variables used decreases from `r ncol(storms.orig)`
 to `r ncol(storms.df)`.
 
+#### Subsetting by Year
+The following histogram supports the claim that the earlier years of the database have generally fewer event records,most likely due to a lack of good records.
+```{r}
+storms.df <- mutate(storms.df, bgn_year=as.integer(format(strptime(storms.df$BGN_DATE, "%m/%d/%Y"), "%Y")))
+unique(storms.df$bgn_year)
+ggplot(storms.df, aes(x=bgn_year)) +
+    ggtitle(paste("Number of Weather Event Observations per Year")) +
+    xlab("Year") + ylab("Number Events") +
+    theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
+    geom_histogram(binwidth=1, color="black", fill="white")
+```
+
+It looks like better records were kept from 1995 onwards, so `storms.df`
+will be subsetted accordingly.
+```{r}
+storms.df <- filter(storms.df, bgn_year >= 1995)
+dim(storms.df)
+```
+
 #### Filtering the dataset
 Reducing the dataset to only those observations where there are injures/fatalities
 or property/crop damage also helps.
 ```{r}
-storms.df <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0 |
-                       storms.df$PROPDMG>0 | storms.df$CROPDMG>0, ]
+storms.df <- filter(storms.df, FATALITIES>0 | INJURIES>0 | PROPDMG>0 | CROPDMG>0)
 dim(storms.df)
 ```
+
 The number of observations used decreases from `r nrow(storms.orig)`
 to `r nrow(storms.df)`.
 
@@ -188,7 +211,8 @@ cnt <- human.top_summary$souls[index]
 
 # Plot
 ggplot(human.top_summary, aes(x=normalizedEVTYPE, y=souls)) +
-  ggtitle(paste("Top", top_n, "Injuries and Fatalities per Event Type")) +
+  ggtitle(paste("Top", top_n, "Injuries and Fatalities per Event Type\n",
+                min(storms.df$bgn_year), " - ", max(storms.df$bgn_year))) +
   xlab("Event Type") + ylab("Count") +
   theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
   geom_point() +
@@ -214,50 +238,88 @@ Some of the EXP units are in lower case, so upper case them all.
 ```{r}
 damage.df$PROPDMGEXP <- toupper(damage.df$PROPDMGEXP)
 damage.df$CROPDMGEXP <- toupper(damage.df$CROPDMGEXP)
-#unique(damage.df$PROPDMGEXP)
-#unique(damage.df$CROPDMGEXP)
-damage.df <- mutate(damage.df, cost=0)
+unique(damage.df$PROPDMGEXP)
+unique(damage.df$CROPDMGEXP)
+```
+
+The code below computes each observation's total cost in units of thousands
+of dollars in a new `kcost` variable.
+Per page section 2.7 of [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf), K = thousands, M = millions,
+and B = billions.
+Numeric exponents are treated as base 10.
+As we've seen from the unique() output above, there are also rogue EXP units.
+I've decided to treat these as K since that's the smallest EXP unit from section 2.7.
+```{r}
+damage.df <- mutate(damage.df, kcost=0)
 for (i in 1:nrow(damage.df)) {
-#for (i in 1:10000) {
-  dmg <- damage.df[i, "PROPDMG"]
-  if (dmg > 0) {
-    exp <- damage.df[i, "PROPDMGEXP"]
+  row <- damage.df[i,]
+  kcost <- 0
+  
+  # Include property damage in kcost
+  kdmg <- row["PROPDMG"]
+  if (kdmg > 0) {
+    exp <- row["PROPDMGEXP"]
     if (!is.na(exp)) {
-      if (exp == "K") {       cost <- dmg * 1000;
-      } else if (exp == "M") {cost <- dmg * 100000;
+      if        (exp=="3"|exp=="K") { k <- kdmg
+      } else if (exp=="4")          { k <- kdmg * 10
+      } else if (exp=="5")          { k <- kdmg * 100
+      } else if (exp=="6"|exp=="M") { k <- kdmg * 1000
+      } else if (exp=="7")          { k <- kdmg * 10000
+      } else if (exp=="B")          { k <- kdmg * 1000000
+      } else                        { k <- kdmg # Assume thousands
+        print(row)
       }
-      damage.df[i, "cost"] <- damage.df[i, "cost"] + cost
     }
   }
+
+  kdmg <- row["CROPDMG"]
+  if (kdmg > 0) {
+    exp <- row["CROPDMGEXP"]
+    if (!is.na(exp)) {
+      if        (exp=="3"|exp=="K") { k <- kdmg
+      } else if (exp=="4")          { k <- kdmg * 10
+      } else if (exp=="5")          { k <- kdmg * 100
+      } else if (exp=="6"|exp=="M") { k <- kdmg * 1000
+      } else if (exp=="7")          { k <- kdmg * 10000
+      } else if (exp=="B")          { k <- kdmg * 1000000
+      } else                        { k <- kdmg # Assume thousands
+        print(row)
+      }
+      kcost <- kcost + k
+    }
+  }
+  
+  damage.df[i, "kcost"] <- kcost
 }
 ```
 
 Summarize the property and crop damage by event type and store it in `damage.summary`.
 ```{r}
 damage.summary <- damage.df %>% group_by(normalizedEVTYPE) %>%
-    summarise(cost=sum(cost))
+    summarise(kcost=sum(kcost))
 ```
-There are a total of *`r as.character(sum(damage.summary$cost))`* USD property and
+There are a total of *`r as.character(sum(damage.summary$kcost))`* USD property and
 crop damage costs.
 There are *`r nrow(damage.summary)`* different normalized event types;
 Since this report focuses on the events with the worst impacts, and not all,
 I've decided to only look at the *top `r top_n <- 20` `r top_n`* for this report.
 ```{r}
-damage.top_summary <- top_n(damage.summary, top_n, cost)
-arrange(damage.top_summary, desc(cost))
+damage.top_summary <- top_n(damage.summary, top_n, kcost)
+arrange(damage.top_summary, desc(kcost))
 ```
 
 Plot `damage.top_summary` and notice the event with the worst impact.
 ```{r}
 # Find event with worst impact
-index <- which.max(damage.top_summary$cost)
+index <- which.max(damage.top_summary$kcost)
 evtype <- damage.top_summary$normalizedEVTYPE[index]
-cnt <- damage.top_summary$cost[index]
+cnt <- damage.top_summary$kcost[index]
 
 # Plot
-ggplot(damage.top_summary, aes(x=normalizedEVTYPE, y=cost)) +
-  ggtitle(paste("Top", top_n, "Property and Crop Damage per Event Type")) +
-  xlab("Event Type") + ylab("Cost") +
+ggplot(damage.top_summary, aes(x=normalizedEVTYPE, y=kcost)) +
+  ggtitle(paste("Top", top_n, "Property and Crop Damage per Event Type\n",
+                min(storms.df$bgn_year), " - ", max(storms.df$bgn_year))) +
+  xlab("Event Type") + ylab("Cost (USD x 1000") +
   theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
   geom_point() +
   geom_text(hjust=1, yjust=0, size=4, color="red",

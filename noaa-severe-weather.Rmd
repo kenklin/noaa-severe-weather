@@ -17,7 +17,7 @@ chart interval used by National Weather Service -
 [Natural Hazard Statistics](http://www.nws.noaa.gov/om/hazstats.shtml).
 
 This report shows that **tornadoes** have the worst total effect on popluation health
-while **dought** inflicts the greatest economic consequences during this period.
+while **flooding** inflicts the greatest economic consequences during this period.
 
 --------------------------------------------------------------------------------
 

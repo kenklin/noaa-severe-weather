@@ -243,7 +243,7 @@ ggplot(human.top_summary, aes(x=normEVTYPE, y=souls)) +
                 x=human.top_summary$normEVTYPE[index], y=cnt))
 ```
 
-**`r evtype`** had a combined total of **`r cnt`** combined injuries and
+**`r evtype`** had a total of **`r cnt`** combined injuries and
 fatalities from **`r min_year`** - **`r max_year`**.
 
 
@@ -322,12 +322,13 @@ Summarize the property and crop damage by event type and store it in `damage.sum
 damage.summary <- damage.df %>%
     group_by(normEVTYPE) %>%
     summarise(kcost=sum(kcost))
+dim(damage.summary)
 ```
 There are a total of **`r as.character(sum(damage.summary$kcost))`** (thousand $)
 property and crop damage costs during the time period.
 
-There are **`r nrow(damage.summary)`** different normalized event types;
-Since this report focuses on the events with the worst impacts, and not all,
+There are **`r nrow(damage.summary)`** different normalized event types.
+Since this report focuses on the events with the worst impacts, and **not** all,
 I've decided to only look at the **top `r top_n <- 20` `r top_n`** for this report.
 ```{r}
 damage.top_summary <- top_n(damage.summary, top_n, kcost)
@@ -353,5 +354,5 @@ ggplot(damage.top_summary, aes(x=normEVTYPE, y=kcost)) +
                 x=damage.top_summary$normEVTYPE[index], y=cnt))
 ```
 
-**`r evtype`** had a combined total of **`r cnt`** (thousand $)
+**`r evtype`** had a total of **`r cnt`** (thousand $)
 combined property and crop damage from **`r min_year`** - **`r max_year`**.

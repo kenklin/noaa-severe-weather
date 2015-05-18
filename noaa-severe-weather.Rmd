@@ -1,23 +1,23 @@
 ---
-title: "US Weather Effects on Population Health and the Economic Consequences 2001 - 2011"
+title: "2001 - 2011 US Weather Effects on Population Health and the Economic Consequences"
 output: html_document
 ---
 
 ## Synopsis
 In this report we aim to describe which type of US weather events are most
-harmful with respect to **population health** (injuries and fatalities) and which
+harmful to **population health** (injuries and fatalities) and which
 have the greatest **economic consequences** (property and crop damage).
 
-This report explores the NOAA Storm Database, calculating the average consequences
+This report explores the NOAA Storm Database, calculating the total consequences
 over a period of time.
 Although the NOAA Storm Database contains records from
 1950 - November 2011, we confirm that earlier years have fewer events recorded.
 We decide to use the time period of the **last 10 years**, which matches the
-interval used by National Weather Service - [Natural Hazard Statistics]
-(http://www.nws.noaa.gov/om/hazstats.shtml).
+chart interval used by National Weather Service -
+[Natural Hazard Statistics](http://www.nws.noaa.gov/om/hazstats.shtml).
 
 This report shows that **tornadoes** have the worst total effect on popluation health
-while **dought** has the greatest economic consequences during this period.
+while **dought** inflicts the greatest economic consequences during this period.
 
 --------------------------------------------------------------------------------
 
@@ -31,10 +31,9 @@ library(ggplot2)
 ```
 
 ### Reading in the data
-We first read in the data from the csv file in
-[Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2)
-47mb bzip2 file.
-The data is a bzip2 compressed, comma separated file containing a header and
+We first read in the data from the csv file in the 47mb bzip2 compressed file
+[Storm Data](https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2FStormData.csv.bz2).
+The data is comma separated, containing a header, and
 missing values are coded as blank fields.
 ```{r noaa-severe-weather-read, cache=TRUE}
 storms.orig <- read.csv("data/repdata-data-StormData.csv.bz2", header=TRUE,
@@ -42,8 +41,8 @@ storms.orig <- read.csv("data/repdata-data-StormData.csv.bz2", header=TRUE,
 ```
 
 After reading the data into `storms.orig` we see that there are
-`r nrow(storms.orig)` observations (rows) and 
-`r ncol(storms.orig)` variables (columns) in this dataset.
+**`r nrow(storms.orig)`** observations (rows) and 
+**`r ncol(storms.orig)`** variables (columns) in this dataset.
 ```{r}
 dim(storms.orig)
 ```
@@ -71,7 +70,7 @@ Additionally, the following variables contain data useful for this report.
     - `CROPDMG` - Crop damage dollar amount
     - `CROPDMGEXP` - Crop damage dollar amount magnitude (K, M, B, etc.)
 
-#### Subsetting by dataset variables
+#### Selecting dataset variables
 Reducing the dataset to only those variables we are focusing on both helps
 pre-eliminate non-essential values that we would have to otherwise visually
 inspect later in the analysis and also improves subsequent computational performance.
@@ -87,8 +86,10 @@ dim(storms.df)
 The number of variables used decreases from `r ncol(storms.orig)`
 to `r ncol(storms.df)`.
 
-#### Subsetting by Year
+#### Filtering by year
 The following histogram supports the claim that the earlier years of the database have generally fewer event records, most likely due to a lack of good records.
+To filter by year, we create the `bgn_year` variable which contains the year
+extracted from `BGN_DATE`.
 ```{r}
 storms.df <- mutate(storms.df, bgn_year=as.integer(format(strptime(storms.df$BGN_DATE, "%m/%d/%Y"), "%Y")))
 max_year <- max(storms.df$bgn_year)
@@ -97,8 +98,8 @@ unique(storms.df$bgn_year)
 ```
 ```{r}
 ggplot(storms.df, aes(x=bgn_year, fill=bgn_year >= min_year)) +
-    ggtitle(paste("Number of Weather Event Observations per Year")) +
-    xlab("Year\nfigure 1.") + ylab("Number Events") +
+    ggtitle(paste("Number Weather Event Observations by Year")) +
+    xlab("Year\nfigure 1.") + ylab("Number of Weather Events") +
     theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
     scale_fill_manual("Used in\nthis report", values=c("white", "red")) +
     geom_histogram(binwidth=1, color="black")
@@ -106,17 +107,16 @@ ggplot(storms.df, aes(x=bgn_year, fill=bgn_year >= min_year)) +
 
 It looks like more records were kept from 1995 onwards.
 We decide to use the time period of the **last 10 years**, which matches
-the interval used by National Weather Service - [Natural Hazard Statistics]
-(http://www.nws.noaa.gov/om/hazstats.shtml).
-Although 2011 only has records through November, we include 2011
-nonetheless as it has the most number of records for a year.
-`storms.df` is then subsetted accordingly.
+the interval used by National Weather Service -
+[Natural Hazard Statistics](http://www.nws.noaa.gov/om/hazstats.shtml).
+Although 2011 only has records through November, we include 2011 nonetheless as
+it has the most number of records for a year. `storms.df` is then subsetted accordingly.
 ```{r}
 storms.df <- filter(storms.df, bgn_year >= min_year)
 dim(storms.df)
 ```
 
-#### Filtering the dataset
+#### Filtering by target variables
 Reducing the dataset to only those observations where there are injures/fatalities
 or property/crop damage also helps.
 ```{r}
@@ -124,13 +124,13 @@ storms.df <- filter(storms.df, FATALITIES>0 | INJURIES>0 | PROPDMG>0 | CROPDMG>0
 dim(storms.df)
 ```
 
-The number of observations used decreases from `r nrow(storms.orig)`
-to `r nrow(storms.df)`.
+The number of observations used decreases from the original **`r nrow(storms.orig)`**
+to finally **`r nrow(storms.df)`**.
 
 #### Tidying Event Types
-The previous subsetting and filter results in `r length(unique(storms.df$EVTYPE))`
+The previous subsetting transformations results in **`r length(unique(storms.df$EVTYPE))`**
 unique `EVTYPE` values we need to consider in the reduced `storms.df` dataset
-versus the original `r length(unique(storms.orig$EVTYPE))` values in `storms.orig`.
+versus the original **`r length(unique(storms.orig$EVTYPE))`** values in `storms.orig`.
 ```{r}
 unique(storms.df$EVTYPE)
 ```
@@ -138,59 +138,59 @@ unique(storms.df$EVTYPE)
 Still, there are many event types.  Through visual inspection, we'll now attempt
 to somewhat normalize them while retaining a reasonable level of fidelity.
 The code below shows the series of transformations used.
+The `normEVTYPE` variable in `storms.df` stores these values.
 ```{r}
-normalizedEVTYPE <- storms.df$EVTYPE
+normEVTYPE <- storms.df$EVTYPE
 
 # Upper case all
-normalizedEVTYPE <- toupper(normalizedEVTYPE)
+normEVTYPE <- toupper(normEVTYPE)
 
 # Replace special characters /, (, ), ., \, &, - with space
-normalizedEVTYPE <- gsub("/|\\(|\\)|\\.|\\\\|\\&|\\-", " ", normalizedEVTYPE)
+normEVTYPE <- gsub("/|\\(|\\)|\\.|\\\\|\\&|\\-", " ", normEVTYPE)
 
 # Remove numeric F, G, or numeric magnitudes
-normalizedEVTYPE <- gsub("[F|G]\\d+", " ", normalizedEVTYPE)
-normalizedEVTYPE <- gsub("\\d+", " ", normalizedEVTYPE)
+normEVTYPE <- gsub("[F|G]\\d+", " ", normEVTYPE)
+normEVTYPE <- gsub("\\d+", " ", normEVTYPE)
 
 # Remove plurality
-normalizedEVTYPE <- gsub("RAINS\\s", "RAIN ", normalizedEVTYPE)
-normalizedEVTYPE <- gsub("STORMS", "STORM", normalizedEVTYPE)
-normalizedEVTYPE <- gsub("WINDS", "WIND", normalizedEVTYPE)
-normalizedEVTYPE <- gsub("FLOODS", "FLOOD", normalizedEVTYPE)
+normEVTYPE <- gsub("RAINS\\s", "RAIN ", normEVTYPE)
+normEVTYPE <- gsub("STORMS", "STORM", normEVTYPE)
+normEVTYPE <- gsub("WINDS", "WIND", normEVTYPE)
+normEVTYPE <- gsub("FLOODS", "FLOOD", normEVTYPE)
 
 # Remove adjectives
-normalizedEVTYPE <- gsub("HARD |HIGH |SEVERE |HEAVY |EXCESSIVE |STRONG | INJURY", " ", normalizedEVTYPE)
+normEVTYPE <- gsub("HARD |HIGH |SEVERE |HEAVY |EXCESSIVE |STRONG | INJURY", " ", normEVTYPE)
 
 # Any tornado becomes tornado
-normalizedEVTYPE <- gsub("TORNADOES|TORNDAO", "TORNADO", normalizedEVTYPE)
-normalizedEVTYPE <- gsub(".*TORNADO.*", "TORNADO", normalizedEVTYPE)
+normEVTYPE <- gsub("TORNADOES|TORNDAO", "TORNADO", normEVTYPE)
+normEVTYPE <- gsub(".*TORNADO.*", "TORNADO", normEVTYPE)
 
 # Any hurricane becomes hurricane
-normalizedEVTYPE <- gsub(".*HURRICANE.*", "HURRICANE", normalizedEVTYPE)
+normEVTYPE <- gsub(".*HURRICANE.*", "HURRICANE", normEVTYPE)
 
 # Any thunderstorm becomes thunderstorm
-normalizedEVTYPE <- gsub("TSTM|THUNERSTORM|TUNDERSTORM|THUDERSTORM|THUNDERTORM|THUNDEERSTORM", "THUNDERSTORM", normalizedEVTYPE)
-normalizedEVTYPE <- gsub(".*THUNDERSTORM.*", "THUNDERSTORM", normalizedEVTYPE)
+normEVTYPE <- gsub("TSTM|THUNERSTORM|TUNDERSTORM|THUDERSTORM|THUNDERTORM|THUNDEERSTORM", "THUNDERSTORM", normEVTYPE)
+normEVTYPE <- gsub(".*THUNDERSTORM.*", "THUNDERSTORM", normEVTYPE)
 
 # Snow
-normalizedEVTYPE <- gsub("SNOWFALL", "SNOW", normalizedEVTYPE)
+normEVTYPE <- gsub("SNOWFALL", "SNOW", normEVTYPE)
 
 # Trim adjacent whitespace
-normalizedEVTYPE <- gsub("\\s+", " ", normalizedEVTYPE)
+normEVTYPE <- gsub("\\s+", " ", normEVTYPE)
 
 # Trim leading and trailing blanks
-normalizedEVTYPE <- str_trim(normalizedEVTYPE)
+normEVTYPE <- str_trim(normEVTYPE)
 
-storms.df$normalizedEVTYPE <- normalizedEVTYPE
+storms.df$normEVTYPE <- normEVTYPE
 ```
 
 The number of unique types has been reduced from the
-original `r length(unique(storms.orig$EVTYPE))`
-to `r length(unique(normalizedEVTYPE))`.
+original **`r length(unique(storms.orig$EVTYPE))`**
+to **`r length(unique(normEVTYPE))`**.
 ```{r}
-unique(normalizedEVTYPE)
+unique(normEVTYPE)
 ```
 
-#### Miscellaneous Tidying
 
 
 --------------------------------------------------------------------------------
@@ -206,16 +206,20 @@ human.df <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
 
 Summarize the injuries and fatalities by event type and store it in `human.summary`.
 ```{r}
-human.summary <- human.df %>% group_by(normalizedEVTYPE) %>%
+human.summary <- human.df %>%
+    group_by(normEVTYPE) %>%
     summarise(souls=sum(INJURIES, FATALITIES))
 dim(human.summary)
 ```
 
-There are an average of *`r as.character(sum(human.summary$souls))`* injuries and fatalities.
-There are *`r nrow(human.summary)`* different normalized event types;
+There are a total of **`r as.character(sum(human.summary$souls))`** combined
+injuries and fatalities during the time period.
+
+There are **`r nrow(human.summary)`** different normalized event types;
 Since this report focuses on the events with the worst impacts, and not all,
 I've decided to only look at the **top `r top_n <- 20` `r top_n`** for this report.
 ```{r}
+top_n <- 20
 human.top_summary <- top_n(human.summary, top_n, souls)
 arrange(human.top_summary, desc(souls))
 ```
@@ -224,20 +228,23 @@ Plot `human.top_summary` and notice the event with the worst impact.
 ```{r}
 # Find event with worst impact
 index <- which.max(human.top_summary$souls)
-evtype <- human.top_summary$normalizedEVTYPE[index]
+evtype <- human.top_summary$normEVTYPE[index]
 cnt <- human.top_summary$souls[index]
 
 # Plot
-ggplot(human.top_summary, aes(x=normalizedEVTYPE, y=souls)) +
-  ggtitle(paste("Top", top_n, "Injuries and Fatalities per Event Type\n",
+ggplot(human.top_summary, aes(x=normEVTYPE, y=souls)) +
+  ggtitle(paste("Total Injuries and Fatalities by Event Type\n",
                 min_year, " - ", max_year)) +
   xlab("Event Type\nfigure 2.") + ylab("Count") +
   theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
   geom_point() +
   geom_text(hjust=0, yjust=0, size=4, color="red",
             aes(label=paste(evtype, cnt),
-                x=human.top_summary$normalizedEVTYPE[index], y=cnt))
+                x=human.top_summary$normEVTYPE[index], y=cnt))
 ```
+
+**`r evtype`** had a combined total of **`r cnt`** combined injuries and
+fatalities from **`r min_year`** - **`r max_year`**.
 
 
 ### Property and Crop Damage
@@ -265,61 +272,63 @@ of dollars in a new `kcost` variable.
 Per page section 2.7 of [Storm Data Documentation](https://d396qusza40orc.cloudfront.net/repdata%2Fpeer2_doc%2Fpd01016005curr.pdf), K = thousands, M = millions,
 and B = billions.
 In prior years there were also rogue EXP units some of which were numeric
-(treated as base 10 exponents).  
+(treated as base 10 exponents).
 I've decided to treat all others as K since that's the smallest EXP unit from section 2.7.
 ```{r}
 damage.df <- mutate(damage.df, kcost=0)
 for (i in 1:nrow(damage.df)) {
   row <- damage.df[i,]
-  kcost <- 0
   
-  # Include property damage in kcost
+  k1 <- 0   # row's property damage
   kdmg <- row["PROPDMG"]
   if (kdmg > 0) {
     exp <- row["PROPDMGEXP"]
     if (!is.na(exp)) {
-      if        (exp=="3"|exp=="K") { k <- kdmg
-      } else if (exp=="4")          { k <- kdmg * 10
-      } else if (exp=="5")          { k <- kdmg * 100
-      } else if (exp=="6"|exp=="M") { k <- kdmg * 1000
-      } else if (exp=="7")          { k <- kdmg * 10000
-      } else if (exp=="B")          { k <- kdmg * 1000000
-      } else                        { k <- kdmg # Assume thousands
+      if        (exp=="3"|exp=="K") { k1 <- kdmg
+      } else if (exp=="4")          { k1 <- kdmg * 10
+      } else if (exp=="5")          { k1 <- kdmg * 100
+      } else if (exp=="6"|exp=="M") { k1 <- kdmg * 1000
+      } else if (exp=="7")          { k1 <- kdmg * 10000
+      } else if (exp=="B")          { k1 <- kdmg * 1000000
+      } else                        { k1 <- kdmg # Assume thousands
         print(row)
       }
     }
   }
 
+  k2 <- 0   # row's crop damage
   kdmg <- row["CROPDMG"]
   if (kdmg > 0) {
     exp <- row["CROPDMGEXP"]
     if (!is.na(exp)) {
-      if        (exp=="3"|exp=="K") { k <- kdmg
-      } else if (exp=="4")          { k <- kdmg * 10
-      } else if (exp=="5")          { k <- kdmg * 100
-      } else if (exp=="6"|exp=="M") { k <- kdmg * 1000
-      } else if (exp=="7")          { k <- kdmg * 10000
-      } else if (exp=="B")          { k <- kdmg * 1000000
-      } else                        { k <- kdmg # Assume thousands
+      if        (exp=="3"|exp=="K") { k2 <- kdmg
+      } else if (exp=="4")          { k2 <- kdmg * 10
+      } else if (exp=="5")          { k2 <- kdmg * 100
+      } else if (exp=="6"|exp=="M") { k2 <- kdmg * 1000
+      } else if (exp=="7")          { k2 <- kdmg * 10000
+      } else if (exp=="B")          { k2 <- kdmg * 1000000
+      } else                        { k2 <- kdmg # Assume thousands
         print(row)
       }
-      kcost <- kcost + k
     }
   }
   
-  damage.df[i, "kcost"] <- kcost
+  damage.df[i, "kcost"] <- k1 + k2
 }
 ```
 
 Summarize the property and crop damage by event type and store it in `damage.summary`.
 ```{r}
-damage.summary <- damage.df %>% group_by(normalizedEVTYPE) %>% summarise(kcost=sum(kcost))
+damage.summary <- damage.df %>%
+    group_by(normEVTYPE) %>%
+    summarise(kcost=sum(kcost))
 ```
-There are a total of *`r as.character(sum(damage.summary$kcost))`* USD property and
-crop damage costs.
-There are *`r nrow(damage.summary)`* different normalized event types;
+There are a total of **`r as.character(sum(damage.summary$kcost))`** (thousand $)
+property and crop damage costs during the time period.
+
+There are **`r nrow(damage.summary)`** different normalized event types;
 Since this report focuses on the events with the worst impacts, and not all,
-I've decided to only look at the *top `r top_n <- 20` `r top_n`* for this report.
+I've decided to only look at the **top `r top_n <- 20` `r top_n`** for this report.
 ```{r}
 damage.top_summary <- top_n(damage.summary, top_n, kcost)
 arrange(damage.top_summary, desc(kcost))
@@ -329,17 +338,20 @@ Plot `damage.top_summary` and notice the event with the worst impact.
 ```{r}
 # Find event with worst impact
 index <- which.max(damage.top_summary$kcost)
-evtype <- damage.top_summary$normalizedEVTYPE[index]
+evtype <- damage.top_summary$normEVTYPE[index]
 cnt <- damage.top_summary$kcost[index]
 
 # Plot
-ggplot(damage.top_summary, aes(x=normalizedEVTYPE, y=kcost)) +
-  ggtitle(paste("Top", top_n, "Property and Crop Damage per Event Type\n",
+ggplot(damage.top_summary, aes(x=normEVTYPE, y=kcost)) +
+  ggtitle(paste("Total Property and Crop Damage by Event Type\n",
                 min_year, " - ", max_year)) +
   xlab("Event Type\nfigure 3.") + ylab("Cost (Thousand $)") +
   theme(axis.text.x=element_text(angle=45, vjust=1, hjust=1)) +
   geom_point() +
   geom_text(hjust=0, yjust=0, size=4, color="red",
             aes(label=paste(evtype, cnt),
-                x=damage.top_summary$normalizedEVTYPE[index], y=cnt))
+                x=damage.top_summary$normEVTYPE[index], y=cnt))
 ```
+
+**`r evtype`** had a combined total of **`r cnt`** (thousand $)
+combined property and crop damage from **`r min_year`** - **`r max_year`**.

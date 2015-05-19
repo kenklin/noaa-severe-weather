@@ -137,10 +137,12 @@ versus the original **`r length(unique(storms.orig$EVTYPE))`** values in `storms
 unique(storms.df$EVTYPE)
 ```
 
-Still, there are many event types.  Through visual inspection, we'll now attempt
-to somewhat normalize them while retaining a reasonable level of fidelity.
+Still, there are many event types.  Through visual inspection and iteration, we've
+somewhat normalized them while retaining a reasonable level of fidelity.
 The code below shows the series of transformations used.
 The `normEVTYPE` variable in `storms.df` stores these values.
+Note that some of the tranformations below may no longer seem relevant
+as they were originally run on earlier, larger sets of EVTYPEs.
 ```{r}
 normEVTYPE <- storms.df$EVTYPE
 
@@ -149,6 +151,9 @@ normEVTYPE <- toupper(normEVTYPE)
 
 # Replace special characters /, (, ), ., \, &, - with space
 normEVTYPE <- gsub("/|\\(|\\)|\\.|\\\\|\\&|\\-", " ", normEVTYPE)
+
+# Remove rows whose types that don't seem to be weather event types
+storms.orig <- filter(storms.orig, EVTYPE=="DROWNING")
 
 # Remove numeric F, G, or numeric magnitudes
 normEVTYPE <- gsub("[F|G]\\d+", " ", normEVTYPE)
@@ -162,7 +167,7 @@ normEVTYPE <- gsub("FLOODS", "FLOOD", normEVTYPE)
 normEVTYPE <- gsub("CURRENTS", "CURRENT", normEVTYPE)
 
 # Remove adjectives
-normEVTYPE <- gsub("HARD |HIGH |LOW |SEVERE |HEAVY |EXCESSIVE |EXTREME |STRONG |LIGHT |DENSE | INJURY", " ", normEVTYPE)
+normEVTYPE <- gsub("HARD |HIGH |LOW |SEVERE |HEAVY |EXCESSIVE |EXTREME |STRONG |LIGHT |DENSE ", " ", normEVTYPE)
 
 # Any tornado becomes tornado
 normEVTYPE <- gsub("TORNADOES|TORNDAO", "TORNADO", normEVTYPE)
@@ -177,6 +182,9 @@ normEVTYPE <- gsub(".*THUNDERSTORM.*", "THUNDERSTORM", normEVTYPE)
 
 # Snow
 normEVTYPE <- gsub("SNOWFALL", "SNOW", normEVTYPE)
+
+# Any flooding becomes flood
+normEVTYPE <- gsub(".* FLOOD|.* FLOODING", "FLOOD", normEVTYPE)
 
 # Trim adjacent whitespace
 normEVTYPE <- gsub("\\s+", " ", normEVTYPE)
@@ -207,6 +215,8 @@ human.df <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
 ```
 
 Summarize the injuries and fatalities by event type and store it in `human.summary`.
+Rather than display the means for the `r num_years` years, I chose to
+display the sums for the `r num_years` years.
 ```{r}
 human.summary <- human.df %>%
     group_by(normEVTYPE) %>%
@@ -302,6 +312,8 @@ for (i in 1:nrow(damage.df)) {
 ```
 
 Summarize the property and crop damage by event type and store it in `damage.summary`.
+Rather than display the means for the `r num_years` years, I chose to
+display the sums for the `r num_years` years.
 ```{r}
 damage.summary <- damage.df %>%
     group_by(normEVTYPE) %>%

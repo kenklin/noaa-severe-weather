@@ -265,10 +265,12 @@ unique(storms.df$EVTYPE)
 ## [79] "FREEZING FOG"
 ```
 
-Still, there are many event types.  Through visual inspection, we'll now attempt
-to somewhat normalize them while retaining a reasonable level of fidelity.
+Still, there are many event types.  Through visual inspection and iteration, we've
+somewhat normalized them while retaining a reasonable level of fidelity.
 The code below shows the series of transformations used.
 The `normEVTYPE` variable in `storms.df` stores these values.
+Note that some of the tranformations below may no longer seem relevant
+as they were originally run on earlier, larger sets of EVTYPEs.
 
 ```r
 normEVTYPE <- storms.df$EVTYPE
@@ -278,6 +280,9 @@ normEVTYPE <- toupper(normEVTYPE)
 
 # Replace special characters /, (, ), ., \, &, - with space
 normEVTYPE <- gsub("/|\\(|\\)|\\.|\\\\|\\&|\\-", " ", normEVTYPE)
+
+# Remove rows whose types that don't seem to be weather event types
+storms.orig <- filter(storms.orig, EVTYPE=="DROWNING")
 
 # Remove numeric F, G, or numeric magnitudes
 normEVTYPE <- gsub("[F|G]\\d+", " ", normEVTYPE)
@@ -291,7 +296,7 @@ normEVTYPE <- gsub("FLOODS", "FLOOD", normEVTYPE)
 normEVTYPE <- gsub("CURRENTS", "CURRENT", normEVTYPE)
 
 # Remove adjectives
-normEVTYPE <- gsub("HARD |HIGH |LOW |SEVERE |HEAVY |EXCESSIVE |EXTREME |STRONG |LIGHT |DENSE | INJURY", " ", normEVTYPE)
+normEVTYPE <- gsub("HARD |HIGH |LOW |SEVERE |HEAVY |EXCESSIVE |EXTREME |STRONG |LIGHT |DENSE ", " ", normEVTYPE)
 
 # Any tornado becomes tornado
 normEVTYPE <- gsub("TORNADOES|TORNDAO", "TORNADO", normEVTYPE)
@@ -307,6 +312,9 @@ normEVTYPE <- gsub(".*THUNDERSTORM.*", "THUNDERSTORM", normEVTYPE)
 # Snow
 normEVTYPE <- gsub("SNOWFALL", "SNOW", normEVTYPE)
 
+# Any flooding becomes flood
+normEVTYPE <- gsub(".* FLOOD|.* FLOODING", "FLOOD", normEVTYPE)
+
 # Trim adjacent whitespace
 normEVTYPE <- gsub("\\s+", " ", normEVTYPE)
 
@@ -317,7 +325,7 @@ storms.df$normEVTYPE <- normEVTYPE
 ```
 
 The number of unique types has been reduced to a final count of
-**61**.
+**57**.
 
 ```r
 unique(normEVTYPE)
@@ -325,26 +333,24 @@ unique(normEVTYPE)
 
 ```
 ##  [1] "HAIL"                 "THUNDERSTORM"         "LIGHTNING"           
-##  [4] "FLASH FLOOD"          "WINTER STORM"         "TORNADO"             
+##  [4] "FLOOD"                "WINTER STORM"         "TORNADO"             
 ##  [7] "WIND"                 "RIP CURRENT"          "TROPICAL STORM"      
-## [10] "HURRICANE"            "AVALANCHE"            "FLOOD"               
-## [13] "WILD FOREST FIRE"     "STORM SURGE"          "ICE STORM"           
-## [16] "DUST STORM"           "RAIN"                 "HEAT"                
-## [19] "URBAN SML STREAM FLD" "FOG"                  "SURF"                
-## [22] "COLD"                 "HAZARDOUS SURF"       "WINTER WEATHER MIX"  
-## [25] "SNOW"                 "SMALL HAIL"           "BLIZZARD"            
-## [28] "WILDFIRE"             "DRY MICROBURST"       "COLD WEATHER"        
-## [31] "WHIRLWIND"            "COASTAL FLOODING"     "DROUGHT"             
-## [34] "ICE ON ROAD"          "DUST DEVIL"           "SNOW SQUALLS"        
-## [37] "SEICHE"               "MIXED PRECIPITATION"  "ROUGH SEAS"          
-## [40] "GUSTY WIND"           "DROWNING"             "COLD WIND CHILL"     
-## [43] "WATERSPOUT"           "SEAS"                 "LANDSLIDE"           
-## [46] "FROST FREEZE"         "ASTRONOMICAL TIDE"    "WINDCHILL"           
-## [49] "SURF SURF"            "TROPICAL DEPRESSION"  "COASTAL FLOOD"       
-## [52] "FUNNEL CLOUD"         "LAKE EFFECT SNOW"     "WINTER WEATHER"      
-## [55] "MARINE WIND"          "TSUNAMI"              "STORM SURGE TIDE"    
-## [58] "LAKESHORE FLOOD"      "SMOKE"                "MARINE HAIL"         
-## [61] "FREEZING FOG"
+## [10] "HURRICANE"            "AVALANCHE"            "WILD FOREST FIRE"    
+## [13] "STORM SURGE"          "ICE STORM"            "DUST STORM"          
+## [16] "RAIN"                 "HEAT"                 "URBAN SML STREAM FLD"
+## [19] "FOG"                  "SURF"                 "COLD"                
+## [22] "HAZARDOUS SURF"       "WINTER WEATHER MIX"   "SNOW"                
+## [25] "SMALL HAIL"           "BLIZZARD"             "WILDFIRE"            
+## [28] "DRY MICROBURST"       "COLD WEATHER"         "WHIRLWIND"           
+## [31] "DROUGHT"              "ICE ON ROAD"          "DUST DEVIL"          
+## [34] "SNOW SQUALLS"         "SEICHE"               "MIXED PRECIPITATION" 
+## [37] "ROUGH SEAS"           "GUSTY WIND"           "DROWNING"            
+## [40] "COLD WIND CHILL"      "WATERSPOUT"           "SEAS"                
+## [43] "LANDSLIDE"            "FROST FREEZE"         "ASTRONOMICAL TIDE"   
+## [46] "WINDCHILL"            "SURF SURF"            "TROPICAL DEPRESSION" 
+## [49] "FUNNEL CLOUD"         "LAKE EFFECT SNOW"     "WINTER WEATHER"      
+## [52] "MARINE WIND"          "TSUNAMI"              "STORM SURGE TIDE"    
+## [55] "SMOKE"                "MARINE HAIL"          "FREEZING FOG"
 ```
 
 
@@ -362,6 +368,8 @@ human.df <- storms.df[storms.df$FATALITIES>0 | storms.df$INJURIES>0, ]
 ```
 
 Summarize the injuries and fatalities by event type and store it in `human.summary`.
+Rather than display the means for the 10 years, I chose to
+display the sums for the 10 years.
 
 ```r
 human.summary <- human.df %>%
@@ -371,13 +379,13 @@ dim(human.summary)
 ```
 
 ```
-## [1] 45  2
+## [1] 43  2
 ```
 
 There are a total of **34657** combined
 injuries and fatalities during the time period.
 
-There are **45** different normalized event types;
+There are **43** different normalized event types;
 Since this report focuses on the events with the worst impacts, and not all,
 I've decided to only look at the **top  20** for this report.
 
@@ -395,22 +403,22 @@ arrange(human.top_summary, desc(souls))
 ## 2             HEAT  4939
 ## 3     THUNDERSTORM  2826
 ## 4        LIGHTNING  2620
-## 5        HURRICANE  1358
-## 6      FLASH FLOOD  1056
+## 5            FLOOD  1609
+## 6        HURRICANE  1358
 ## 7         WILDFIRE   986
 ## 8             WIND   946
 ## 9      RIP CURRENT   674
-## 10           FLOOD   548
-## 11            HAIL   459
-## 12  WINTER WEATHER   376
-## 13             FOG   320
-## 14    WINTER STORM   313
-## 15  TROPICAL STORM   288
-## 16            SNOW   262
-## 17 COLD WIND CHILL   256
-## 18       AVALANCHE   248
-## 19      DUST STORM   218
-## 20            SURF   210
+## 10            HAIL   459
+## 11  WINTER WEATHER   376
+## 12             FOG   320
+## 13    WINTER STORM   313
+## 14  TROPICAL STORM   288
+## 15            SNOW   262
+## 16 COLD WIND CHILL   256
+## 17       AVALANCHE   248
+## 18      DUST STORM   218
+## 19            SURF   210
+## 20         TSUNAMI   162
 ```
 
 Plot `human.top_summary` and notice the event with the worst impact.
@@ -530,6 +538,8 @@ for (i in 1:nrow(damage.df)) {
 ```
 
 Summarize the property and crop damage by event type and store it in `damage.summary`.
+Rather than display the means for the 10 years, I chose to
+display the sums for the 10 years.
 
 ```r
 damage.summary <- damage.df %>%
@@ -539,12 +549,12 @@ dim(damage.summary)
 ```
 
 ```
-## [1] 55  2
+## [1] 51  2
 ```
 There are a total of **333599496.23** (thousand $)
 property and crop damage costs during the time period.
 
-There are **55** different normalized event types.
+There are **51** different normalized event types.
 Since this report focuses on the events with the worst impacts, and **not** all,
 I've decided to only look at the **top  20** for this report.
 
@@ -557,26 +567,26 @@ arrange(damage.top_summary, desc(kcost))
 ## Source: local data frame [20 x 2]
 ## 
 ##          normEVTYPE       kcost
-## 1             FLOOD 136979555.9
+## 1             FLOOD 148725933.2
 ## 2         HURRICANE  75399077.8
 ## 3       STORM SURGE  43168315.0
 ## 4           TORNADO  18627512.6
-## 5       FLASH FLOOD  11521916.7
-## 6              HAIL  10567565.4
-## 7           DROUGHT   6269583.0
-## 8      THUNDERSTORM   5576479.3
-## 9              WIND   5567219.4
-## 10         WILDFIRE   5054139.8
-## 11 STORM SURGE TIDE   4642038.0
-## 12   TROPICAL STORM   2418421.5
-## 13        ICE STORM   1973382.8
-## 14     WINTER STORM   1351051.2
-## 15     FROST FREEZE   1103566.0
-## 16             RAIN    819469.5
-## 17        LIGHTNING    515593.0
-## 18             HEAT    498501.7
-## 19        LANDSLIDE    344095.0
-## 20    COASTAL FLOOD    216820.6
+## 5              HAIL  10567565.4
+## 6           DROUGHT   6269583.0
+## 7      THUNDERSTORM   5576479.3
+## 8              WIND   5567219.4
+## 9          WILDFIRE   5054139.8
+## 10 STORM SURGE TIDE   4642038.0
+## 11   TROPICAL STORM   2418421.5
+## 12        ICE STORM   1973382.8
+## 13     WINTER STORM   1351051.2
+## 14     FROST FREEZE   1103566.0
+## 15             RAIN    819469.5
+## 16        LIGHTNING    515593.0
+## 17             HEAT    498501.7
+## 18        LANDSLIDE    344095.0
+## 19 WILD FOREST FIRE    202886.6
+## 20             SNOW    196736.7
 ```
 
 Plot `damage.top_summary` and notice the event with the worst impact.
@@ -601,5 +611,5 @@ ggplot(damage.top_summary, aes(x=normEVTYPE, y=kcost)) +
 
 ![](noaa-severe-weather_files/figure-html/unnamed-chunk-21-1.png) 
 
-**FLOOD** had a total of **1.3697956\times 10^{8}** (thousand $)
+**FLOOD** had a total of **1.4872593\times 10^{8}** (thousand $)
 combined property and crop damage from **2002** - **2011**.
